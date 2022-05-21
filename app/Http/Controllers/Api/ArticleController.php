@@ -2,18 +2,29 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Models\Article;
+use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use App\Http\Controllers\Controller;
+use App\Http\Resources\ArticleResource;
 use App\Http\Requests\SaveArticleRequest;
 use App\Http\Resources\ArticleCollection;
-use App\Http\Resources\ArticleResource;
-use App\Models\Article;
-use Illuminate\Http\Response;
 
 class ArticleController extends Controller
 {
     public function index(): ArticleCollection
     {
-        return ArticleCollection::make(Article::all());
+        $articles = Article::allowedSorts(['title', 'content']);
+
+        return ArticleCollection::make(
+            $articles->paginate(
+                $perPage = request('page.size', 15), 
+                $columns = ['*'], 
+                $pageName = 'page[number]', 
+                $page = request('page.number', 1)
+            )->appends(request()->only('page.size'))
+        );
     }
 
     public function store(SaveArticleRequest $request): ArticleResource
