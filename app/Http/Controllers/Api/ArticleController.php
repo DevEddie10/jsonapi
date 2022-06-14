@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Article;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ArticleResource;
@@ -17,14 +15,7 @@ class ArticleController extends Controller
     {
         $articles = Article::allowedSorts(['title', 'content']);
 
-        return ArticleCollection::make(
-            $articles->paginate(
-                $perPage = request('page.size', 15), 
-                $columns = ['*'], 
-                $pageName = 'page[number]', 
-                $page = request('page.number', 1)
-            )->appends(request()->only('page.size'))
-        );
+        return ArticleCollection::make($articles->jsonPaginate());
     }
 
     public function store(SaveArticleRequest $request): ArticleResource
