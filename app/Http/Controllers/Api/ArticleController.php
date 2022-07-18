@@ -7,15 +7,20 @@ use Illuminate\Http\Response;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\ArticleResource;
 use App\Http\Requests\SaveArticleRequest;
-use App\Http\Resources\ArticleCollection;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Resources\Json\JsonResource;
 
 class ArticleController extends Controller
 {
-    public function index(): ArticleCollection
+    public function index(): AnonymousResourceCollection
     {
-        $articles = Article::allowedSorts(['title', 'content']);
+        $articles = Article::query()
+            ->allowedFilters(['title', 'content', 'month', 'year'])
+            ->allowedSorts(['title', 'content'])
+            ->sparseFieldset()
+            ->jsonPaginate();
 
-        return ArticleCollection::make($articles->jsonPaginate());
+        return ArticleResource::collection($articles);
     }
 
     public function store(SaveArticleRequest $request): ArticleResource
@@ -25,8 +30,12 @@ class ArticleController extends Controller
         return ArticleResource::make($article);
     }
 
-    public function show(Article $article): ArticleResource
+    public function show($article): JsonResource
     {
+        $article = Article::where('slug', $article)
+            ->sparseFieldset()
+            ->firstOrFail();
+
         return ArticleResource::make($article);
     }
 
