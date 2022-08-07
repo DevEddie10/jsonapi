@@ -12,6 +12,9 @@ class ArticleCollection extends ResourceCollection
      * @param  \Illuminate\Http\Request  $request
      * @return array|\Illuminate\Contracts\Support\Arrayable|\JsonSerializable
      */
+
+    #Ya no se usa 
+    
     public function toArray($request)
     {
         return [

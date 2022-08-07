@@ -29,17 +29,68 @@ class JsonApiQueryBuilder
         };
     }
 
+    public function allowedFilters(): Closure
+    {
+        return function ($allowedFilters) {
+            /** @var Builder $this */
+
+            foreach (request('filter', []) as $filter => $value) {
+                abort_unless(in_array($filter, $allowedFilters), 400);
+
+                $this->hasNamedScope($filter)
+                    ? $this->{$filter}($value)
+                    : $this->where($filter, 'LIKE', '%' . $value . '%');
+            }
+
+            return $this;
+        };
+    }
+
+    public function sparseFieldset(): Closure
+    {
+        return function () {
+            /** @var Builder $this */
+
+            if (request()->isNotFilled('fields')) {
+                return $this;
+            }
+            
+            $fields = explode(',', request('fields.' . $this->getResourceType()));
+
+            $routeKeyName = $this->model->getRouteKeyName();
+
+            if (!in_array($routeKeyName, $fields)) {
+                $fields[] =  $routeKeyName;
+            }
+
+            return $this->addSelect($fields);
+        };
+    }
+
     public function jsonPaginate(): Closure
     {
         return function () {
-             /** @var Builder $this */
+            /** @var Builder $this */
 
             return $this->paginate(
                 $perPage = request('page.size', 15),
                 $columns = ['*'],
                 $pageName = 'page[number]',
                 $page = request('page.number', 1)
-            )->appends(request()->only('sort', 'page.size'));
+            )->appends(request()->only('sort', 'filter', 'page.size'));
+        };
+    }
+
+    public function getResourceType(): Closure
+    {
+        return function () {
+            /** @var Builder $this */
+
+            if (property_exists($this->model, 'resourceType')) {
+                return $this->model->resourceType;
+            }
+
+            return $this->model->getTable();
         };
     }
 }
